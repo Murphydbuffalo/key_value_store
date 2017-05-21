@@ -4,7 +4,7 @@ defmodule KV.BucketTest do
   alias KV.Bucket
 
   setup do
-    { :ok, bucket } = Bucket.create()
+    { :ok, bucket } = Bucket.start_link()
     { :ok, bucket: bucket }
   end
 

@@ -3,8 +3,12 @@ defmodule KV.BucketTest do
 
   alias KV.Bucket
 
-  test "it stores values labeled with keys" do
+  setup do
     { :ok, bucket } = Bucket.create("test_bucket")
+    { :ok, bucket: bucket }
+  end
+
+  test "it stores values labeled with keys", %{bucket: bucket } do
     assert Bucket.get(bucket, "foo") == nil
 
     Bucket.set(bucket, "foo", "bar")

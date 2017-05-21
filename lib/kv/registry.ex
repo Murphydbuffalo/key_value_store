@@ -8,6 +8,8 @@ defmodule KV.Registry do
 
     @doc """
       Ensures there is a bucket associated to the given `name` in `server`.
+      In a real application this would probably be a call, but this guide
+      wants to demonstrate how casts work too.
     """
     def create(server, name), do: GenServer.cast(server, {:create, name})
 
@@ -16,6 +18,8 @@ defmodule KV.Registry do
       Returns `{:ok, pid}` if the bucket exists, `:error` otherwise.
     """
     def lookup(server, name), do: GenServer.call(server, {:lookup, name}) 
+
+    def stop(server), do: GenServer.stop(server)
   end
 
   defmodule Server do

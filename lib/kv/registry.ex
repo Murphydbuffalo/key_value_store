@@ -27,20 +27,35 @@ defmodule KV.Registry do
 
     alias KV.Bucket
 
-    def init(:ok), do: { :ok, %{} }
+    def init(:ok), do: { :ok, %{ names: %{}, refs: %{} } }
 
-    def handle_call({:lookup, name}, _client, names) do
-      { :reply, Map.fetch(names, name), names }
+    def handle_call({:lookup, name}, _client, state = %{ names: names, refs: _refs }) do
+      { :reply, Map.fetch(names, name), state }
     end
 
-    def handle_cast({:create, name}, names) do
+    def handle_cast({:create, name}, state = %{ names: names, refs: refs }) do
       if Map.has_key?(names, name) do
-        { :noreply, names }
+        { :noreply, state }
       else
         { :ok, pid } = Bucket.create()
-        { :noreply, Map.put(names, name, pid) }
+        ref = Process.monitor(pid)
+
+        refs = Map.put(refs, ref, name)
+        names = Map.put(names, name, pid)
+        { :noreply, %{ names: names, refs: refs }}
       end
     end
+
+    def handle_info({ :DOWN, ref, :process, _pid, _reason }, %{ names: names, refs: refs }) do
+      name = Map.get(refs, ref)
+      names = Map.delete(names, name)
+      { :noreply, %{ names: names, refs: refs }}
+    end
+
+    def handle_info(_message, state) do
+      { :noreply, state }
+    end
+
   end
 end
 

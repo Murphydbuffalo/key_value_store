@@ -14,5 +14,11 @@ defmodule KV.BucketTest do
     Bucket.set(bucket, "foo", "bar")
     assert Bucket.get(bucket, "foo") == "bar"
   end
+
+  test "it deletes and returns values labeled with keys", %{bucket: bucket } do
+    Bucket.set(bucket, "foo", "bar")
+    assert Bucket.delete(bucket, "foo") == "bar"
+    assert Bucket.get(bucket, "foo") == nil
+  end
 end
 

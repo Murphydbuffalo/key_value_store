@@ -17,5 +17,12 @@ defmodule KV.Bucket do
   def get(bucket, key) do
     Agent.get(bucket, fn (map) -> Map.get(map, key) end)
   end
+
+  @doc """
+  Removes and returns the value for a given key in the bucket.
+  """
+  def delete(bucket, key) do
+    Agent.get_and_update(bucket, fn (map) -> Map.pop(map, key) end)
+  end
 end
 

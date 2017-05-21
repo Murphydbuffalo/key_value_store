@@ -31,7 +31,7 @@ defmodule KV.Registry do
 
     def handle_cast({:create, name}, names) do
       if Map.has_key?(names, name) do
-        { :no_reply, names }
+        { :noreply, names }
       else
         { :ok, pid } = Bucket.create()
         { :noreply, Map.put(names, name, pid) }

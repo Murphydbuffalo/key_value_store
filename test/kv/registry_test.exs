@@ -6,17 +6,18 @@ defmodule KV.RegistryTest do
   setup do
     { :ok, server } = Registry.start_link()
     Registry.create(server, "Dan's Bucket")
+    { :ok, server: server }
   end
  
   test "it retrieves a bucket pid by name", %{ server: server } do
-    { :reply, bucket } = Registry.lookup(server, "Dan's Bucket")
+    { :ok, bucket } = Registry.lookup(server, "Dan's Bucket")
     assert is_pid(bucket)
   end
 
   test "it returns the bucket process with an existing name", %{ server: server } do
-    { :reply, original_bucket_pid } = Registry.lookup(server, "Dan's Bucket")
+    { :ok, original_bucket_pid } = Registry.lookup(server, "Dan's Bucket")
     Registry.create(server, "Dan's Bucket")
-    { :reply, new_bucket_pid } = Registry.lookup(server, "Dan's Bucket")
+    { :ok, new_bucket_pid } = Registry.lookup(server, "Dan's Bucket")
 
     assert original_bucket_pid == new_bucket_pid
   end

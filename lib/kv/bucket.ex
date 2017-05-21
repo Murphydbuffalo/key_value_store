@@ -2,7 +2,7 @@ defmodule KV.Bucket do
   @doc """
   Creates a new bucket. This starts an agent process with an empty map as its state.
   """
-  def create(name), do: Agent.start_link(fn -> %{} end)
+  def create(), do: Agent.start_link(fn -> %{} end)
 
   @doc """
   Sets the value for a given key in the bucket.

@@ -1,6 +1,7 @@
 defmodule KV.Supervisor do
   use Supervisor
   alias KV.Registry.Client, as: Registry
+  alias KV.Bucket.Supervisor, as: BucketSupervisor
 
   def start_link do
     Supervisor.start_link(__MODULE__, :ok)
@@ -8,10 +9,11 @@ defmodule KV.Supervisor do
 
   def init(:ok) do
     children = [
-      worker(Registry, [Registry])
+      worker(Registry, [Registry]),
+      supervisor(BucketSupervisor, [])
     ]
 
-    supervise(children, strategy: :one_for_one)
+    supervise(children, strategy: :rest_for_one)
   end
 end
 

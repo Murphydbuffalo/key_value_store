@@ -25,7 +25,7 @@ defmodule KV.Registry do
   defmodule Server do
     use GenServer
 
-    alias KV.Bucket
+    alias KV.Bucket.Supervisor, as: BucketSupervisor
 
     def init(:ok), do: { :ok, %{ names: %{}, refs: %{} } }
 
@@ -37,7 +37,7 @@ defmodule KV.Registry do
       if Map.has_key?(names, name) do
         { :noreply, state }
       else
-        { :ok, pid } = Bucket.start_link()
+        { :ok, pid } = BucketSupervisor.start_bucket()
         ref = Process.monitor(pid)
 
         refs = Map.put(refs, ref, name)
@@ -55,7 +55,6 @@ defmodule KV.Registry do
     def handle_info(_message, state) do
       { :noreply, state }
     end
-
   end
 end
 

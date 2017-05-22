@@ -1,18 +1,12 @@
 defmodule KV do
   @moduledoc """
-  Documentation for KV.
+  A distributed key-value store.
   """
+  
+  use Application
 
-  @doc """
-  Hello world.
-
-  ## Examples
-
-      iex> KV.hello
-      :world
-
-  """
-  def hello do
-    :world
+  def start(_type, _args) do
+    KV.Supervisor.start_link()
   end
 end
+

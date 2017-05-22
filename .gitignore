@@ -21,3 +21,6 @@ erl_crash.dump
 
 NOTES.markdown
 
+# Ignore Vim swap files (used to persist changes being stored in Vim buffers)
+*.swp
+

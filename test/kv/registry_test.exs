@@ -34,6 +34,14 @@ defmodule KV.RegistryTest do
 
     assert_receive { :DOWN, ^ref, :process, ^bucket, _reason }
 
+    # Send a synchronousm message to the registry and wait for the reply
+    # to ensure that it had time to process the :DOWN message from the monitor.
+    # We need to do this because `handle_info` is asynchronous, and so without
+    # awaiting the result of the sychronous call there is
+    # no guarantee that the Registry has removed the name of the dead bucket
+    # by the time we make the assertion at the end of this test.
+    Registry.create(registry_name, "just a dummy bucket")
+
     assert Registry.lookup(registry_name, "Dan's Bucket") == :error
   end
 end

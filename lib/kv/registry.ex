@@ -3,7 +3,7 @@ defmodule KV.Registry do
     @doc """
       Starts the registry.
     """
-    def start_link(name), do: GenServer.start_link(KV.Registry.Server, :ok, [name: name])
+    def start_link(name), do: GenServer.start_link(KV.Registry.Server, name, [name: name])
 
 
     @doc """
@@ -11,13 +11,18 @@ defmodule KV.Registry do
       In a real application this would probably be a call, but this guide
       wants to demonstrate how casts work too.
     """
-    def create(server, name), do: GenServer.cast(server, {:create, name})
+    def create(server, name), do: GenServer.call(server, {:create, name})
 
     @doc """
-      Looks up the bucket pid for `name` stored in `server`.
+      Looks up the bucket pid for `name` stored in `ets_table`.
       Returns `{:ok, pid}` if the bucket exists, `:error` otherwise.
     """
-    def lookup(server, name), do: GenServer.call(server, {:lookup, name}) 
+    def lookup(names, name) when is_atom(names) do
+      case :ets.lookup(names, name) do
+        [{^name, pid}] -> { :ok, pid }
+        [] -> :error
+      end
+    end
 
     def stop(server), do: GenServer.stop(server)
   end
@@ -27,28 +32,28 @@ defmodule KV.Registry do
 
     alias KV.Bucket.Supervisor, as: BucketSupervisor
 
-    def init(:ok), do: { :ok, %{ names: %{}, refs: %{} } }
-
-    def handle_call({:lookup, name}, _client, state = %{ names: names, refs: _refs }) do
-      { :reply, Map.fetch(names, name), state }
+    def init(name) do
+      names = :ets.new(name, [:set, :protected, :named_table, read_concurrency: true])
+      { :ok, %{ names: names, refs: %{} }}
     end
 
-    def handle_cast({:create, name}, state = %{ names: names, refs: refs }) do
-      if Map.has_key?(names, name) do
-        { :noreply, state }
-      else
-        { :ok, pid } = BucketSupervisor.start_bucket()
-        ref = Process.monitor(pid)
+    def handle_call({:create, name}, _client, state = %{ names: names, refs: refs }) do
+      case KV.Registry.Client.lookup(names, name) do
+        { :ok, _pid } ->
+          { :reply, { :ok, name }, state }
+        :error ->
+          { :ok, pid } = BucketSupervisor.start_bucket()
+          ref = Process.monitor(pid)
+          refs = Map.put(refs, ref, name)
+          :ets.insert(names, {name, pid})
 
-        refs = Map.put(refs, ref, name)
-        names = Map.put(names, name, pid)
-        { :noreply, %{ names: names, refs: refs }}
+          { :reply, { :ok, name }, %{ names: names, refs: refs }}
       end
     end
 
     def handle_info({ :DOWN, ref, :process, _pid, _reason }, %{ names: names, refs: refs }) do
       name = Map.get(refs, ref)
-      names = Map.delete(names, name)
+      :ets.delete(names, name)
       { :noreply, %{ names: names, refs: refs }}
     end
 

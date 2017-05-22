@@ -3,7 +3,7 @@ defmodule KV.Registry do
     @doc """
       Starts the registry.
     """
-    def start_link, do: GenServer.start_link(KV.Registry.Server, :ok, [])
+    def start_link(name), do: GenServer.start_link(KV.Registry.Server, :ok, [name: name])
 
 
     @doc """

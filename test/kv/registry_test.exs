@@ -4,8 +4,8 @@ defmodule KV.RegistryTest do
   alias KV.Registry.Client, as: Registry
   alias KV.Bucket
 
-  setup do
-    { :ok, server } = Registry.start_link()
+  setup context do
+    { :ok, server } = Registry.start_link(context.test)
     Registry.create(server, "Dan's Bucket")
     { :ok, server: server }
   end

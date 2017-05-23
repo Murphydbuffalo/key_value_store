@@ -4,6 +4,8 @@ defmodule KVWeb do
   """
 
   require Logger
+  alias KVWeb.Parser
+  alias KVWeb.KVInterface
 
   @ doc """
   Establish a connetion to the socket at `port`, listen for clients connecting
@@ -29,7 +31,6 @@ defmodule KVWeb do
     # Our application's `start` function starts a `Task.Supervisor` process
     # with the name `KVWeb.TaskSupervisor`, which we use here to identify that
     # process (rather than using its pid).
-    # 
     # We spin up a child `Task` process to serve each newly connected client.
     { :ok, pid } = Task.Supervisor.start_child(KVWeb.TaskSupervisor, fn () ->
       serve(client)
@@ -45,20 +46,29 @@ defmodule KVWeb do
   end
 
   defp serve(client) do
-    client
-    |> read_line()
-    |> write_line(client) 
+    message = :gen_tcp.recv(client, 0)
+    handle_message(client, message)
 
     serve(client)
   end
 
-  defp read_line(client) do
-    { :ok, data } = :gen_tcp.recv(client, 0)
-    data
+  defp handle_message(client, {:ok, data }) do
+    command = Parser.parse(data)
+    respond(client, command)
   end
 
-  defp write_line(line, client) do
-    :gen_tcp.send(client, line)
+  defp handle_message(_client, {:error, _err }) do
+    Logger.info "CLIENT DISCONNECTED\n\n"
+    exit(:normal)
+  end
+
+  defp respond(client, { :ok, command }) do
+    response = KVInterface.run(command)
+    :gen_tcp.send(client, response)
+  end
+
+  defp respond(client, {:error, :invalid_command }) do
+    :gen_tcp.send(client, "INVALID COMMAND\n\n")
   end
 end
 

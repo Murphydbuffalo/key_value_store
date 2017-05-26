@@ -27,7 +27,6 @@ defmodule KVWeb do
 
   defp loop_acceptor(socket) do
     { :ok, client } = :gen_tcp.accept(socket)
-
     # Our application's `start` function starts a `Task.Supervisor` process
     # with the name `KVWeb.TaskSupervisor`, which we use here to identify that
     # process (rather than using its pid).
@@ -46,29 +45,20 @@ defmodule KVWeb do
   end
 
   defp serve(client) do
-    message = :gen_tcp.recv(client, 0)
-    handle_message(client, message)
-
+    with {:ok, data} <- :gen_tcp.recv(client, 0),
+         {:ok, command} <- Parser.parse(data),
+         response = KVInterface.run(command)
+    do
+      :gen_tcp.send(client, response)
+    else
+      {:error, :invalid_command} ->
+        :gen_tcp.send(client, "INVALID COMMAND\n\n")
+      {:error, err} ->
+        Logger.error "ERROR: #{err}\n\n"
+        exit(:shutdown)
+    end
+    
     serve(client)
-  end
-
-  defp handle_message(client, {:ok, data }) do
-    command = Parser.parse(data)
-    respond(client, command)
-  end
-
-  defp handle_message(_client, {:error, _err }) do
-    Logger.info "CLIENT DISCONNECTED\n\n"
-    exit(:normal)
-  end
-
-  defp respond(client, { :ok, command }) do
-    response = KVInterface.run(command)
-    :gen_tcp.send(client, response)
-  end
-
-  defp respond(client, {:error, :invalid_command }) do
-    :gen_tcp.send(client, "INVALID COMMAND\n\n")
   end
 end
 
